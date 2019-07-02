@@ -1,0 +1,130 @@
+---
+title: "coffee_plot"
+author: "Pankaj Shah"
+date: "7/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)     # to load excel files into R
+library(ggplot2)    # for data visualisation
+library(dplyr)      # data wrangling
+library(tidyr)      # reshaping data
+library(rworldmap)  # world map background
+library(sf) # Simple Features standard
+library(rnaturalearth)
+
+```
+
+
+http://www.fao.org/faostat/en/#data/QC
+
+
+```{r}
+
+coffee0<- read.csv('~/Downloads/coffee.csv')
+
+countries <- read_excel("~/Downloads/countries.xls", skip = 2)
+map.world <- map_data(map="world")
+```
+
+```{r}
+glimpse(coffee0)
+glimpse(countries)
+glimpse(map.world)
+```
+
+```{r}
+prod_count <- data.frame(unique(coffee0$Area)) %>% rename(Area = unique.coffee0.Area.)
+glimpse(prod_count)
+
+anti_join(prod_count, countries, by = "Area") 
+
+anti_join(prod_count, map.world, by = c("Area"="region"))
+```
+
+```{r}
+
+coffee0 <- coffee0 %>% 
+  dplyr::mutate(Area = dplyr::recode(Area,
+       'Bolivia (Plurinational State of)' = 'Bolivia',
+       'Cabo Verde' = 'Cape Verde',
+       'China, mainland' = 'China',
+       'China, Taiwan Province of' = 'Taiwan',
+       'Congo' = 'Republic of Congo',
+       "CÃ´te d'Ivoire" = 'Ivory Coast',
+       'Democratic Republic of the Congo' = 'Democratic Republic of the Congo',
+       'Ethiopia PDR' = 'Ethiopia',
+       "Lao People's Democratic Republic" = 'Laos',
+       'Myanmar' = 'Myanmar',
+       'Sao Tome and Principe' = 'Sao Tome and Principe',
+       'United Republic of Tanzania' = 'Tanzania',
+       'United States of America' = 'USA',
+       'Venezuela (Bolivarian Republic of)' = 'Venezuela',
+       'Viet Nam'='Vietnam',
+       'Saint Vincent and the Grenadines'='Saint Vincent',
+       'Trinidad and Tobago'='Trinidad'))
+
+
+```
+
+```{r}
+coffee1    <- left_join(coffee0 ,countries, by="Area")
+
+coffee2017 <- coffee1 %>% filter(Year=="2017" & Element == "Yield") 
+
+map.coffee <- left_join( map.world, coffee2017, by = c('region' = 'Area'))
+```
+
+```{r}
+ggplot(data=map.coffee, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = Value))
+```
+
+```{r}
+breaks <- c(  500, 1500,2800, 4400, 6100, 9000,15500, 24500 )
+
+ggplot(map.coffee, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = Value)) +
+  scale_fill_gradientn(colours =  c('#461863','#404E88','#2A8A8C','#7FD157','#F9E53F'),
+                       values = scales::rescale(breaks),breaks = breaks) +
+  guides(fill = guide_legend(reverse = T)) +
+  labs(fill = 'Yield hg/year',
+       title = 'Coffee yield by Country',
+       subtitle = 'Yield in hg in 2017',
+       x = NULL,
+       y = NULL) +
+  theme(text = element_text(family = 'Gill Sans', color = '#EEEEEE'),
+        plot.title = element_text(size = 28),
+        plot.subtitle = element_text(size = 14),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = '#333333'),
+        plot.background = element_rect(fill = '#333333'),
+        legend.position = c(.18,.36),
+        legend.background = element_blank(),
+        legend.key = element_blank())
+```
+
+Above graph is only for the year 2017 now make animation graph for the year 1961- 2017.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
