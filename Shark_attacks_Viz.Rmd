@@ -1,0 +1,76 @@
+---
+title: "Shark_viz_plot"
+author: "Pankaj Shah"
+date: "7/2/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# United States Shark Attacks
+```{r, message= FALSE, error= FALSE, warning= FALSE}
+library(ggplot2)
+library(png)
+library(grid)
+```
+
+
+```{r}
+us_attacks <- read.csv("https://raw.githubusercontent.com/shahnp/data/master/united_states_shark_attacks.csv", stringsAsFactors = FALSE)
+```
+
+```{r}
+ggplot(us_attacks, aes(x = State, y = Total, fill = State)) +
+   geom_bar(stat = "identity") +
+   xlab("States") +
+   ylab("Total Shark Attacks") +
+   ggtitle("United States Shark Attacks") +
+   theme(axis.text.x = element_text(angle = 35, hjust = 1)) + 
+   theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+us_attacks$State <- factor(us_attacks$State, us_attacks$State)
+```
+
+```{r}
+ggplot(us_attacks, aes(x = State, y = Total, fill = State)) +
+    geom_bar(stat = "identity") +
+    xlab("States") +
+    ylab("Total Shark Attacks") +
+    ggtitle("United States Shark Attacks") +
+    theme(axis.text.x = element_text(angle = 35, hjust = 1)) + 
+    theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r}
+library(RCurl)
+myurl <- "https://raw.githubusercontent.com/shahnp/data/master/Image/shark_background.png"
+shark_background  <-  readPNG(getURLContent(myurl))
+```
+
+
+```{r, message = FALSE, warning = FALSE, error = FALSE}
+ggplot(us_attacks, aes(x=reorder(State, -Total), y=Total)) +
+    ggtitle("United States Shark Attacks") +
+    scale_fill_continuous(guide = FALSE) +
+    annotation_custom(rasterGrob(shark_background, 
+                                 width = unit(1,"npc"), 
+                                 height = unit(1,"npc")), 
+                      -Inf, Inf, -Inf, Inf) +
+    geom_bar(stat="identity", fill = "#000000", position = "dodge", width = .75, colour = 'black') +
+    scale_y_continuous('Total Attacks', limits = c(0, max(us_attacks$Total) + max(us_attacks$Total))) +
+    scale_x_discrete('States') +
+    geom_text(aes(label = round(Total), ymax = 0), size = 4, fontface = 2, 
+              colour = 'white', hjust = 0.5, vjust = -1) +
+    theme(axis.text.x = element_text(angle=45, hjust = 1)) + 
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+
