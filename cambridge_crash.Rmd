@@ -1,0 +1,254 @@
+---
+title: "Crash_crash"
+author: "Pankaj Shah"
+date: "2/4/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+rm(list= ls()) # Clean up the environment
+library("dplyr")
+library("tidyverse")
+library("chron")
+library("ggplot2")
+library("janitor")
+library("Hmisc")
+library("funModeling")
+library("tidyverse")
+library("openair")
+library("rticles")
+library("lubridate")
+library("tidyr")
+library("skimr")
+library("rmarkdown")
+library("visdat")
+library("maps")
+library("leaflet")
+library("plotly")
+library("waffle") 
+library("DataExplorer")
+library("lattice")
+library("wordcloud")
+library("gridExtra")
+```
+
+
+```{r}
+# Info about the crime datasets
+
+# Writing function
+df_info <- function(x) {
+  data  <- as.character(substitute(x))  ##data frame name
+  size <- format(object.size(x), units="Mb")  ##size of data frame in Mb
+  
+  ##column information
+  column.info <- data.frame( column        = names(sapply(x, class)),
+                             #class         = sapply(x, class),
+                             unique.values = sapply(x, function(y) length(unique(y))),
+                             missing.count = colSums(is.na(x)),
+                             missing.pct   = round(colSums(is.na(x)) / nrow(x) * 100, 2))
+  
+  row.names(column.info) <- 1:nrow(column.info)
+  
+  list(data.frame     = data.frame(name=data, size=size),
+       dimensions     = data.frame(rows=nrow(x), columns=ncol(x)),
+       column.details = column.info)
+}
+Sys.timezone() # Will Display Time zone of your zone
+```
+
+```{r}
+df <- read.csv("https://raw.githubusercontent.com/shahnp/Cambridge_crash/master/crash.csv")
+```
+
+```{r}
+df_info(df)
+```
+
+```{r}
+colnames(df)
+```
+
+```{r}
+head(df)
+```
+
+```{r}
+# Handling the Missing datasets
+sort(sapply(df, function(x) sum(is.na(x))), decreasing = TRUE)
+```
+
+
+```{r}
+# Sometimes we need to be carefull when package ask us to remove the missing data.
+plot_missing(df)
+```
+
+```{r}
+
+# Clean the column names.
+df <- clean_names(df)
+```
+
+```{r}
+basic_eda <- function(data)
+{
+  library(Hmisc)
+  library(funModeling)
+  library(tidyverse)
+  library(skimr)
+  library(visdat)
+
+  skim(data)
+  vis_dat(data)
+  df_status(data)
+  plot_correlation(data)
+  freq(data)
+  profiling_num(data)
+  plot_num(data)
+  describe(data)
+  sapply(data, function(x) sum(is.na(x)))
+}
+```
+
+
+```{r}
+basic_eda(df)
+```
+
+
+```{r}
+range(df$year)
+```
+
+```{r}
+# Writing function to get info about our datasets
+df_info <- function(x) {
+  data  <- as.character(substitute(x))  ##data frame name
+  size <- format(object.size(x), units="Mb")  ##size of data frame in Mb
+  
+  plot_missing(data.frame(x)) # Vizualization of Missing Data.
+  
+  ##column information
+  column.info <- data.frame( column        = names(sapply(x, class)),
+                             #class         = sapply(x, class),
+                             unique.values = sapply(x, function(y) length(unique(y))),
+                             missing.count = colSums(is.na(x)),
+                             missing.pct   = round(colSums(is.na(x)) / nrow(x) * 100, 2))
+                            
+  row.names(column.info) <- 1:nrow(column.info)
+  list(data.frame     = data.frame(name=data, size=size),
+       dimensions     = data.frame(rows=nrow(x), columns=ncol(x)),
+       column.details = column.info)
+}
+Sys.timezone() # Will Display Time zone of your zone
+
+# Information about the datasets
+df_info(df)
+```
+
+
+
+```{r}
+length(df$crash_number) # Unique identifier. Unique for each rows.
+duplicate_data <- get_dupes(df,crash_number) # file numbers have more unique values than other column.
+duplicate_data # We don't have any duplicate data at all.
+```
+
+
+```{r}
+dim(df)
+```
+
+# Lets work with date_time
+
+```{r}
+head(df$date_time)
+```
+
+```{r}
+df$date_time <- mdy_hms(df$date_time) # our date is in ymd_hms format.
+head(df$date_time, 3) # sanity check POSIXct class
+class(df$date_time) # Convert into Date
+```
+
+
+```{r}
+df <- df %>% separate(date_time, into = c("date", "time"), sep = " ") # split into date and time stamp
+
+```
+
+```{r}
+df$date <- as.Date(df$date)
+df <- df %>%
+  dplyr::mutate(year = lubridate::year(date), 
+                month = lubridate::month(date), 
+                day = lubridate::day(date), 
+                dow = lubridate::wday(date))
+```
+
+
+```{r}
+head(df)
+```
+
+
+```{r}
+# df%>%
+#   group_by(year) %>% 
+#   count(date) %>% # count no.of incidence reported throughou the year
+#   ggplot(aes(year, n))+
+#   geom_boxplot(aes(group = cut_width(year, 0.25)), outlier.alpha = 0.3, outlier.colour = "red", outlier.shape = 1)+
+#   labs(title ="Box plot of Crash Incident Reported through year 2010-2016", color = "red")+
+#   labs(caption = "Source:  Data | @ Pankaj Shah")+
+#   theme(plot.title = element_text(color="#D70026", size=14, face="bold.italic", hjust = 0.5, vjust=0.5))
+```
+
+```{r}
+library(skimr) # statistical viz
+skim(df)
+```
+
+
+```{r}
+library(DataExplorer)
+plot_missing(df) # Nothing is missing.
+```
+
+
+```{r}
+head(df)
+```
+
+
+```{r}
+unique(df$day_of_week)
+```
+
+```{r}
+df %>% count(day_of_week)
+```
+
+```{r}
+qplot(df$day_of_week, xlab= "Day of week", main= "Crimes by day of week") + scale_y_continuous("Number of crimes")
+```
+
+```{r}
+head(df)
+```
+
+```{r}
+library("RColorBrewer")
+library(wordcloud)
+pal = brewer.pal(9,"Blues")
+street_name <- table(df$steet_name) %>% as.data.frame()
+colnames(street_name) <- c("Street_Name", "Count")
+wordcloud(street_name$Street_Name, street_name$Count, min.freq = 10, random.order = F, random.color = F, colors =c("black", "cornflowerblue", "darkred"), scale = c(2,.3))
+```
+
+
+Need to revisit and make lot of correction. Used of Highcharter would be useful
